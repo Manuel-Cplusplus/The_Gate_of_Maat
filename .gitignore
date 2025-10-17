@@ -1,0 +1,5 @@
+__pycache__/
+myenv/
+.env
+Github-repo.zip
+DemoEmotionGPT.py
