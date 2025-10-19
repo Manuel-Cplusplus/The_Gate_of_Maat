@@ -14,6 +14,38 @@ score = 0
 fsm = LLMStateMachine(initial_state='AWAKENING',end_state='END')
 
 
+
+# ----------- Shared transition handler -----------
+# Handles LLM outcomes: 'condemn', 'continue', 'interest'.
+async def handle_trial_transition(fsm: LLMStateMachine, response: str, current_state: str, next_state: str):
+    global score
+    print(f"STATE: {current_state}")
+
+    # Extract outcome (before ':')
+    result = (response or "").strip().lower().split(":")[0].strip()
+
+    if result == "condemn":
+        fsm.set_next_state("CONDEMNATION")
+        return response
+
+    elif result == "continue":
+        score += 1
+        fsm.set_context_data("score", score)
+        fsm.set_next_state(next_state)
+        return response
+
+    elif result == "interest":
+        score += 2
+        fsm.set_context_data("score", score)
+        fsm.set_next_state(next_state)
+        return response
+
+    else:
+        fsm.set_next_state(current_state)
+        return "Your words are lost in the dunes. Speak again, traveler."
+
+
+
 # ------------- Awakenig -------------
 @fsm.define_state(
     state_key="AWAKENING",
@@ -31,8 +63,6 @@ fsm = LLMStateMachine(initial_state='AWAKENING',end_state='END')
         "END": "If the user wants to stop the conversation."                   
     },
 )
-
-
 async def awakening_state(fsm: LLMStateMachine, response: str, will_transition: bool):
     print("STATE: AWAKENING")
     if will_transition and fsm.get_next_state() == "END":
@@ -59,29 +89,8 @@ async def awakening_state(fsm: LLMStateMachine, response: str, will_transition: 
     },
 )
 async def invocation_state(fsm: LLMStateMachine, response: str, will_transition: bool):
-    global score
-    print("STATE: INVOCATION")
-
-    # Estrazione di outcome
-    result = (response or "").strip().lower().split(":")[0].strip() 
-
-    if result == "condemn":
-        fsm.set_next_state("CONDEMNATION")
-        return response
-
-    elif result == "continue":
-        score += 1
-        fsm.set_next_state("MENTAL_TEST")
-        return response
-
-    elif result == "interest":
-        score += 2
-        fsm.set_next_state("MENTAL_TEST")
-        return response
-    else:
-        # fallback if LLM returns something unexpected
-        fsm.set_next_state("INVOCATION")
-        return "Your words are lost in the dunes. Speak with purpose."    
+    return await handle_trial_transition(fsm, response, "INVOCATION", "MENTAL_TEST")
+ 
 
 
 # ------------- Mental Test -------------
@@ -103,30 +112,9 @@ async def invocation_state(fsm: LLMStateMachine, response: str, will_transition:
     },
 )
 async def mental_test_state(fsm: LLMStateMachine, response: str, will_transition: bool):
-    global score
-    print("STATE: MENTAL TEST")
-
-    result = (response or "").strip().lower().split(":")[0].strip() 
-
-    if result == "condemn":
-        fsm.set_next_state("CONDEMNATION")
-        return response
-
-    elif result == "continue":
-        score += 1
-        fsm.set_next_state("HEART_TEST")
-        return response
-
-    elif result == "interest":
-        score += 2
-        fsm.set_next_state("HEART_TEST")
-        return response
-
-    else:
-        fsm.set_next_state("MENTAL_TEST")
-        return "Your words are lost in the dunes. Speak with purpose."    
-
-
+    return await handle_trial_transition(fsm, response, "MENTAL_TEST", "HEART_TEST")
+    
+    
 
 # ------------- Heart Test -------------
 @fsm.define_state(
@@ -146,28 +134,7 @@ async def mental_test_state(fsm: LLMStateMachine, response: str, will_transition
     },
 )
 async def heart_test_state(fsm: LLMStateMachine, response: str, will_transition: bool):
-    global score
-    print("STATE: HEART TEST")
-
-    result = (response or "").strip().lower().split(":")[0].strip() 
-
-    if result == "condemn":
-        fsm.set_next_state("CONDEMNATION")
-        return response
-
-    elif result == "continue":
-        score += 1
-        fsm.set_next_state("SPIRIT_TEST")
-        return response
-
-    elif result == "interest":
-        score += 2
-        fsm.set_next_state("SPIRIT_TEST")
-        return response
-
-    else:
-        fsm.set_next_state("HEART_TEST")
-        return "Your words are lost in the dunes. Speak with purpose."    
+    return await handle_trial_transition(fsm, response, "HEART_TEST", "SPIRIT_TEST")
 
 
 
@@ -189,30 +156,7 @@ async def heart_test_state(fsm: LLMStateMachine, response: str, will_transition:
     },
 )
 async def spirit_test_state(fsm: LLMStateMachine, response: str, will_transition: bool):
-    global score
-    print("STATE: SPIRIT TEST")
-
-    result = (response or "").strip().lower().split(":")[0].strip() 
-
-    if result == "condemn":
-        fsm.set_next_state("CONDEMNATION")
-        return "You have mistaken dust for eternity. The Gate remains closed."
-    
-    elif result == "continue":
-        score += 1
-        fsm.set_context_data("score", score)
-        fsm.set_next_state("EVALUATION")
-        return "The silence embraces you. You may now face the final judgment."
-    
-    elif result == "interest":
-        score += 2
-        fsm.set_context_data("score", score)
-        fsm.set_next_state("EVALUATION")
-        return "The Sphinx lowers its gaze, your spirit understands what words cannot. Step forward."
-    
-    else:
-        fsm.set_next_state("SPIRIT_TEST")
-        return "Your words are lost in the dunes. Speak with purpose."    
+    return await handle_trial_transition(fsm, response, "SPIRIT_TEST", "EVALUATION")
 
 
 
