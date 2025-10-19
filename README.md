@@ -5,7 +5,7 @@ This repository contains all files used for the development of a **Formal Method
 
 ---
 
-## 📘 Table of Contents
+## Table of Contents
 1. [Description](#description)  
 2. [Installation](#installation)  
 3. [Running the Project](#running-the-project)  
