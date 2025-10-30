@@ -323,7 +323,7 @@ async def main():
     print("The Sphinx awakens. Type 'exit' to quit, or greet the sphinx to begin.\n")
 
     while not fsm.is_completed():
-        user_input = input("Traveler: ")
+        user_input = input("\n > Traveler: ")
         if user_input.strip().lower() == "exit":
             fsm.set_next_state("END")
             break
@@ -333,7 +333,7 @@ async def main():
             user_input=user_input
         )
 
-        print(f"Sphinx: {run_state.response}")
+        print(f"\n > Sphinx: {run_state.response}")
 
     print(f"\nFinal Score: {score}")
 
